@@ -1,0 +1,30 @@
+{"text": "Yapay zeka ve makine öğrenmesi, modern bilgisayar bilimlerinin en hızlı gelişen alanlarından biridir."}
+{"text": "Büyük dil modelleri, metinlerdeki sonraki kelimeleri tahmin ederek dilin kurallarını ve kavramsal ilişkilerini öğrenir."}
+{"text": "Öz-dikkat mekanizması (self-attention), bir cümledeki tüm kelimelerin birbirleriyle olan anlamsal ilişkisini aynı anda hesaplar."}
+{"text": "Transformer mimarisi, geleneksel tekrarlayan sinir ağlarına göre çok daha yüksek paralelleştirme imkanı sunar."}
+{"text": "İstatistikte olasılık dağılımları, rastgele değişkenlerin alabileceği değerlerin olasılıklarını tanımlamak için kullanılır."}
+{"text": "Normal dağılım veya Gauss dağılımı, çan eğrisi şeklinde simetrik bir sürekli olasılık dağılımıdır."}
+{"text": "Merkezi limit teoremi, yeterince büyük örneklem boyutlarında bağımsız rastgele değişkenlerin ortalamasının normal dağılıma yakınsadığını ifade eder."}
+{"text": "Regresyon analizi, bağımlı bir değişken ile bir veya daha fazla bağımsız değişken arasındaki ilişkiyi modellemek için kullanılır."}
+{"text": "Python programlama dili; sadeliği, zengin kütüphane desteği ve okunabilirliği sayesinde veri biliminde en popüler dildir."}
+{"text": "PyTorch, sinir ağları geliştirmek ve tensör hesaplamaları yapmak için dinamik hesaplama grafiği sunan güçlü bir kütüphanedir."}
+{"text": "Metal Performance Shaders (MPS), Apple Silicon çiplerinde GPU ivmelendirmeli derin öğrenme hesaplamalarını çalıştırır."}
+{"text": "Birleşik bellek mimarisi (Unified Memory), CPU ve GPU'nun aynı bellek havuzunu kopyalama maliyeti olmadan paylaşmasını sağlar."}
+{"text": "Doğrusal cebir, vektör uzaylarını ve bu uzaylar arasındaki doğrusal dönüşümleri inceleyen temel bir matematik dalıdır."}
+{"text": "Matris çarpımı, derin öğrenmedeki yapay sinir ağlarının ileri ve geri geçişlerinin omurgasını oluşturur."}
+{"text": "Türev ve gradyan, bir fonksiyonun belirli bir noktadaki değişim oranını ve en dik artış yönünü gösterir."}
+{"text": "Gradyan inişi (gradient descent), model parametrelerini kayıp fonksiyonunu en aza indirecek yönde güncelleme yöntemidir."}
+{"text": "AdamW optimizatörü, ağırlık sönümleme (weight decay) ile adaptif öğrenme oranını birleştirerek kararlı bir optimizasyon sağlar."}
+{"text": "Ön eğitim (pretraining) aşamasında model, denetimsiz olarak devasa metinleri okuyarak genel dil becerisi kazanır."}
+{"text": "Denetimli ince ayar (SFT) aşamasında model, soru ve cevap şablonlarıyla talimatları doğru takip etmeyi öğrenir."}
+{"text": "Pekiştirmeli öğrenme (reinforcement learning), modelin insan veya ortam geri bildirimiyle daha kaliteli yanıtlar vermesini sağlar."}
+{"text": "Kayıp fonksiyonu (loss function), modelin ürettiği tahminlerin gerçek değerlerden ne kadar saptığını ölçen matematiksel metriktir."}
+{"text": "Çapraz entropi kaybı (cross-entropy loss), sınıflandırma ve dil modelleme görevlerinde olasılık dağılımları arasındaki farkı ölçer."}
+{"text": "Belirteçleme (tokenization), doğal dil metinlerini modelin anlayabileceği sayısal indekslere dönüştürme işlemidir."}
+{"text": "BPE (Byte-Pair Encoding), yaygın harf ve hece çiftlerini birleştirerek dengeli bir kelime dağarcığı oluşturan bir algoritmadır."}
+{"text": "Softmax fonksiyonu, keyfi reel sayı vektörünü toplamı bir olan geçerli bir olasılık dağılımına dönüştürür."}
+{"text": "M4 işlemcisi, Apple'ın gelişmiş transistör yoğunluğu ve yüksek bellek bant genişliği sunan güçlü bir sistem çipidir."}
+{"text": "MacBook Air fansız tasarımıyla sessiz çalışırken pasif soğutma sayesinde enerji verimliliğini üst düzeyde tutar."}
+{"text": "Derin öğrenme modellerinde aşırı uyum (overfitting), modelin eğitim verisini ezberleyip yeni verilerde başarısız olmasıdır."}
+{"text": "Düzenlileştirme (regularization), modelin karmaşıklığını sınırlandırarak genelleme yeteneğini artırmak için kullanılır."}
+{"text": "Açık kaynak yazılımlar, bilginin serbestçe paylaşılmasını ve toplulukların birlikte üretmesini mümkün kılar."}

@@ -82,48 +82,58 @@ def train_epoch(epoch, loader, iters, start_step=0, wandb=None):
 
 
 if __name__ == "__main__":
+    default_out = "../out" if os.path.exists("../out") else "out"
+    default_data = "../dataset/sft_turkce.jsonl" if os.path.exists("../dataset/sft_turkce.jsonl") else "dataset/sft_turkce.jsonl"
+    default_ckp = "../checkpoints" if os.path.exists("../checkpoints") else "checkpoints"
+
     parser = argparse.ArgumentParser(description="MiniMind Full SFT")
-    parser.add_argument("--save_dir", type=str, default="../out", help="模型保存目录")
-    parser.add_argument('--save_weight', default='full_sft', type=str, help="保存权重的前缀名")
-    parser.add_argument("--epochs", type=int, default=2, help="训练轮数")
-    parser.add_argument("--batch_size", type=int, default=16, help="batch size")
-    parser.add_argument("--learning_rate", type=float, default=1e-5, help="初始学习率")
-    parser.add_argument("--device", type=str, default="cuda:0" if torch.cuda.is_available() else "cpu", help="训练设备")
-    parser.add_argument("--dtype", type=str, default="bfloat16", help="混合精度类型")
-    parser.add_argument("--num_workers", type=int, default=8, help="数据加载线程数")
-    parser.add_argument("--accumulation_steps", type=int, default=1, help="梯度累积步数")
-    parser.add_argument("--grad_clip", type=float, default=1.0, help="梯度裁剪阈值")
-    parser.add_argument("--log_interval", type=int, default=100, help="日志打印间隔")
-    parser.add_argument("--save_interval", type=int, default=1000, help="模型保存间隔")
-    parser.add_argument('--hidden_size', default=768, type=int, help="隐藏层维度")
-    parser.add_argument('--num_hidden_layers', default=8, type=int, help="隐藏层数量")
-    parser.add_argument('--max_seq_len', default=768, type=int, help="训练的最大截断长度（中文1token≈1.5~1.7字符）")
-    parser.add_argument('--use_moe', default=0, type=int, choices=[0, 1], help="是否使用MoE架构（0=否，1=是）")
-    parser.add_argument('--seed', default=42, type=int, help="随机种子（DDP下每个rank为seed+rank，每轮为seed+epoch）")
-    parser.add_argument("--data_path", type=str, default="../dataset/sft_t2t_mini.jsonl", help="训练数据路径")
-    parser.add_argument('--from_weight', default='pretrain', type=str, help="基于哪个权重训练，为none则不基于任何权重训练")
-    parser.add_argument('--from_resume', default=0, type=int, choices=[0, 1], help="是否自动检测&续训（0=否，1=是）")
-    parser.add_argument("--use_wandb", action="store_true", help="是否使用wandb")
-    parser.add_argument("--wandb_project", type=str, default="MiniMind-Full-SFT", help="wandb项目名")
-    parser.add_argument("--use_compile", default=0, type=int, choices=[0, 1], help="是否使用torch.compile加速（0=否，1=是）")
+    parser.add_argument("--save_dir", type=str, default=default_out, help="Model kayıt dizini")
+    parser.add_argument('--save_weight', default='full_sft', type=str, help="Kayıt ağırlık dosya öneki")
+    parser.add_argument("--epochs", type=int, default=2, help="Eğitim tur (epoch) sayısı")
+    parser.add_argument("--batch_size", type=int, default=16, help="Batch boyutu")
+    parser.add_argument("--learning_rate", type=float, default=1e-5, help="Başlangıç öğrenme oranı (learning rate)")
+    parser.add_argument("--device", type=str, default="cuda:0" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu"), help="Eğitim cihazı (cuda / mps / cpu)")
+    parser.add_argument("--dtype", type=str, default="bfloat16", help="Karma hassasiyet tipi (bfloat16 / float16)")
+    parser.add_argument("--num_workers", type=int, default=0 if sys.platform == "darwin" else 8, help="Veri yükleme iş parçacığı sayısı (macOS için varsayılan 0)")
+    parser.add_argument("--accumulation_steps", type=int, default=8, help="Gradyan biriktirme adımı")
+    parser.add_argument("--grad_clip", type=float, default=1.0, help="Gradyan kırpma (clipping) eşiği")
+    parser.add_argument("--log_interval", type=int, default=100, help="Log yazdırma sıklığı (adım)")
+    parser.add_argument("--save_interval", type=int, default=1000, help="Model kaydetme sıklığı (adım)")
+    parser.add_argument('--hidden_size', default=768, type=int, help="Gizli katman boyutu (hidden size)")
+    parser.add_argument('--num_hidden_layers', default=8, type=int, help="Gizli katman sayısı")
+    parser.add_argument('--max_seq_len', default=512, type=int, help="Maksimum dizi uzunluğu (sequence length)")
+    parser.add_argument('--use_moe', default=0, type=int, choices=[0, 1], help="MoE mimarisi kullanılsın mı? (0=Hayır, 1=Evet)")
+    parser.add_argument('--seed', default=42, type=int, help="Rastgelelik tohumu (random seed)")
+    parser.add_argument("--data_path", type=str, default=default_data, help="SFT eğitim veri seti yolu")
+    parser.add_argument('--from_weight', default='none', type=str, help="Hangi ağırlıktan başlanacağı (örn: pretrain, sıfırdan başlamak için none)")
+    parser.add_argument('--from_resume', default=0, type=int, choices=[0, 1], help="Kaldığı checkpoint'ten otomatik devam etsin mi? (0=Hayır, 1=Evet)")
+    parser.add_argument("--use_wandb", action="store_true", help="Wandb / Swanlab takibi aktif edilsin mi?")
+    parser.add_argument("--wandb_project", type=str, default="MiniMind-Full-SFT", help="Wandb proje adı")
+    parser.add_argument("--use_compile", default=0, type=int, choices=[0, 1], help="torch.compile hızlandırması kullanılsın mı? (0=Hayır, 1=Evet)")
     args = parser.parse_args()
 
-    # ========== 1. 初始化环境和随机种子 ==========
+    # ========== 1. Ortam ve Rastgelelik Tohumu ==========
     local_rank = init_distributed_mode()
     if dist.is_initialized(): args.device = f"cuda:{local_rank}"
     setup_seed(args.seed + (dist.get_rank() if dist.is_initialized() else 0))
     
-    # ========== 2. 配置目录、模型参数、检查ckp ==========
+    # ========== 2. Dizinler, Model Parametreleri, Checkpoint Kontrolü ==========
     os.makedirs(args.save_dir, exist_ok=True)
+    os.makedirs(default_ckp, exist_ok=True)
     lm_config = MiniMindConfig(hidden_size=args.hidden_size, num_hidden_layers=args.num_hidden_layers, use_moe=bool(args.use_moe))
-    ckp_data = lm_checkpoint(lm_config, weight=args.save_weight, save_dir='../checkpoints') if args.from_resume==1 else None
+    ckp_data = lm_checkpoint(lm_config, weight=args.save_weight, save_dir=default_ckp) if args.from_resume==1 else None
     
-    # ========== 3. 设置混合精度 ==========
-    device_type = "cuda" if "cuda" in args.device else "cpu"
+    # ========== 3. Karma Hassasiyet (Mixed Precision) Ayarı ==========
+    device_type = "cuda" if "cuda" in args.device else ("mps" if "mps" in args.device else "cpu")
     dtype = torch.bfloat16 if args.dtype == "bfloat16" else torch.float16
-    autocast_ctx = nullcontext() if device_type == "cpu" else torch.cuda.amp.autocast(dtype=dtype)
+    if device_type == "cuda":
+        autocast_ctx = torch.cuda.amp.autocast(dtype=dtype)
+    elif device_type == "mps":
+        autocast_ctx = torch.amp.autocast(device_type="mps", dtype=dtype)
+    else:
+        autocast_ctx = nullcontext()
     
-    # ========== 4. 配wandb ==========
+    # ========== 4. Wandb Yapılandırması ==========
     wandb = None
     if args.use_wandb and is_main_process():
         import swanlab as wandb
@@ -132,14 +142,14 @@ if __name__ == "__main__":
         wandb_run_name = f"MiniMind-Full-SFT-Epoch-{args.epochs}-BatchSize-{args.batch_size}-LearningRate-{args.learning_rate}"
         wandb.init(project=args.wandb_project, name=wandb_run_name, id=wandb_id, resume=resume)
     
-    # ========== 5. 定义模型、数据、优化器 ==========
-    model, tokenizer = init_model(lm_config, args.from_weight, device=args.device)
+    # ========== 5. Model, Veri Seti ve Optimizatör ==========
+    model, tokenizer = init_model(lm_config, args.from_weight, save_dir=args.save_dir, device=args.device)
     train_ds = SFTDataset(args.data_path, tokenizer, max_length=args.max_seq_len)
     train_sampler = DistributedSampler(train_ds) if dist.is_initialized() else None
-    scaler = torch.cuda.amp.GradScaler(enabled=(args.dtype == 'float16'))
+    scaler = torch.amp.GradScaler(device_type, enabled=(args.dtype == 'float16'))
     optimizer = optim.AdamW(model.parameters(), lr=args.learning_rate)
     
-    # ========== 6. 从ckp恢复状态 ==========
+    # ========== 6. Checkpoint'ten Durum Kurtarma ==========
     start_epoch, start_step = 0, 0
     if ckp_data:
         model.load_state_dict(ckp_data['model'])
@@ -148,27 +158,27 @@ if __name__ == "__main__":
         start_epoch = ckp_data['epoch']
         start_step = ckp_data.get('step', 0)
     
-    # ========== 7. 编译和分布式包装 ==========
+    # ========== 7. Derleme ve Dağıtık Sarmalama ==========
     if args.use_compile == 1:
         model = torch.compile(model)
-        Logger('torch.compile enabled')
+        Logger('torch.compile aktif edildi')
     if dist.is_initialized():
         model = DistributedDataParallel(model, device_ids=[local_rank])
     
-    # ========== 8. 开始训练 ==========
+    # ========== 8. Eğitimi Başlat ==========
     for epoch in range(start_epoch, args.epochs):
         train_sampler and train_sampler.set_epoch(epoch)
         setup_seed(args.seed + epoch); indices = torch.randperm(len(train_ds)).tolist()
         skip = start_step if (epoch == start_epoch and start_step > 0) else 0
         batch_sampler = SkipBatchSampler(train_sampler or indices, args.batch_size, skip)
-        loader = DataLoader(train_ds, batch_sampler=batch_sampler, num_workers=args.num_workers, pin_memory=True)
+        loader = DataLoader(train_ds, batch_sampler=batch_sampler, num_workers=args.num_workers, pin_memory=(device_type == "cuda"))
         if skip > 0: 
-            Logger(f'Epoch [{epoch + 1}/{args.epochs}]: 跳过前{start_step}个step，从step {start_step + 1}开始')
+            Logger(f'Epoch [{epoch + 1}/{args.epochs}]: İlk {start_step} adım atlanıyor, adım {start_step + 1} üzerinden devam ediliyor')
             train_epoch(epoch, loader, len(loader) + skip, start_step, wandb)
         else:
             train_epoch(epoch, loader, len(loader), 0, wandb)
     
-    # ========== 9. 清理分布进程 ==========
+    # ========== 9. Dağıtık Süreçleri Temizle ==========
     if dist.is_initialized():
         dist.barrier()
         dist.destroy_process_group()

@@ -18,3 +18,7 @@ scripts/minimind-3/
 checkpoints/
 *.pth
 *.safetensors
+
+# Large Datasets (reproducible via dataset/build_turkish_sft.py)
+dataset/*.jsonl
+!dataset/test_pretrain.jsonl

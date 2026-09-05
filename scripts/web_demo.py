@@ -67,10 +67,25 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+device = "cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu")
 
-# 多语言文本
+# Çok dilli metinler / Multi-language texts
 LANG_TEXTS = {
+    'tr': {
+        'settings': 'Model Ayarları',
+        'history_rounds': 'Geçmiş Sohbet Turu',
+        'max_length': 'Maksimum Üretim Uzunluğu',
+        'temperature': 'Sıcaklık (Temperature)',
+        'thinking': 'Düşünme (Thinking)',
+        'tools': 'Araçlar (Tools)',
+        'language': 'Dil (Language)',
+        'send': "MiniMind'a bir mesaj yazın...",
+        'disclaimer': 'Yapay zeka içeriği hatalar içerebilir, lütfen teyit edin.',
+        'think_tip': 'Düşünme modu (<think>...</think>). Çok turlu konuşmalarda deneyseldir.',
+        'tool_select': 'Araç Seçimi (maksimum 4)',
+        'thought_done': 'Düşünce Süreci',
+        'thinking_in_progress': 'Düşünüyor...',
+    },
     'zh': {
         'settings': '模型设定调整',
         'history_rounds': '历史对话轮次',
@@ -83,6 +98,8 @@ LANG_TEXTS = {
         'disclaimer': 'AI 生成内容可能存在错误，请仔细核实',
         'think_tip': '自适应思考，目前多轮对话或Tool Call共存时思考不稳定',
         'tool_select': '工具选择（最多4个）',
+        'thought_done': '已思考',
+        'thinking_in_progress': '思考中...',
     },
     'en': {
         'settings': 'Model Settings',
@@ -96,29 +113,31 @@ LANG_TEXTS = {
         'disclaimer': 'AI-generated content may be inaccurate, please verify',
         'think_tip': 'Adaptive thinking; may be unstable with multi-turn or Tool Call',
         'tool_select': 'Tool Selection (max 4)',
+        'thought_done': 'Thought Process',
+        'thinking_in_progress': 'Thinking...',
     }
 }
 
 def get_text(key):
-    lang = st.session_state.get('lang', 'en')
-    return LANG_TEXTS.get(lang, {}).get(key, LANG_TEXTS['zh'].get(key, key))
+    lang = st.session_state.get('lang', 'tr')
+    return LANG_TEXTS.get(lang, {}).get(key, LANG_TEXTS['tr'].get(key, key))
 
-# 工具定义
+# Araç tanımları / Tool definitions
 TOOLS = [
-    {"type": "function", "function": {"name": "calculate_math", "description": "计算数学表达式", "parameters": {"type": "object", "properties": {"expression": {"type": "string", "description": "数学表达式"}}, "required": ["expression"]}}},
-    {"type": "function", "function": {"name": "get_current_time", "description": "获取当前时间", "parameters": {"type": "object", "properties": {"timezone": {"type": "string", "default": "Asia/Shanghai"}}, "required": []}}},
-    {"type": "function", "function": {"name": "random_number", "description": "生成随机数", "parameters": {"type": "object", "properties": {"min": {"type": "integer"}, "max": {"type": "integer"}}, "required": ["min", "max"]}}},
-    {"type": "function", "function": {"name": "text_length", "description": "计算文本长度", "parameters": {"type": "object", "properties": {"text": {"type": "string"}}, "required": ["text"]}}},
-    {"type": "function", "function": {"name": "unit_converter", "description": "单位转换", "parameters": {"type": "object", "properties": {"value": {"type": "number"}, "from_unit": {"type": "string"}, "to_unit": {"type": "string"}}, "required": ["value", "from_unit", "to_unit"]}}},
-    {"type": "function", "function": {"name": "get_current_weather", "description": "获取天气", "parameters": {"type": "object", "properties": {"city": {"type": "string"}}, "required": ["city"]}}},
-    {"type": "function", "function": {"name": "get_exchange_rate", "description": "获取汇率", "parameters": {"type": "object", "properties": {"from_currency": {"type": "string"}, "to_currency": {"type": "string"}}, "required": ["from_currency", "to_currency"]}}},
-    {"type": "function", "function": {"name": "translate_text", "description": "翻译文本", "parameters": {"type": "object", "properties": {"text": {"type": "string"}, "target_lang": {"type": "string"}}, "required": ["text", "target_lang"]}}},
+    {"type": "function", "function": {"name": "calculate_math", "description": "Matematiksel ifadeyi hesapla", "parameters": {"type": "object", "properties": {"expression": {"type": "string", "description": "Matematik ifadesi"}}, "required": ["expression"]}}},
+    {"type": "function", "function": {"name": "get_current_time", "description": "Geçerli zamanı al", "parameters": {"type": "object", "properties": {"timezone": {"type": "string", "default": "Europe/Istanbul"}}, "required": []}}},
+    {"type": "function", "function": {"name": "random_number", "description": "Rastgele sayı üret", "parameters": {"type": "object", "properties": {"min": {"type": "integer"}, "max": {"type": "integer"}}, "required": ["min", "max"]}}},
+    {"type": "function", "function": {"name": "text_length", "description": "Metin uzunluğunu hesapla", "parameters": {"type": "object", "properties": {"text": {"type": "string"}}, "required": ["text"]}}},
+    {"type": "function", "function": {"name": "unit_converter", "description": "Birim dönüştür", "parameters": {"type": "object", "properties": {"value": {"type": "number"}, "from_unit": {"type": "string"}, "to_unit": {"type": "string"}}, "required": ["value", "from_unit", "to_unit"]}}},
+    {"type": "function", "function": {"name": "get_current_weather", "description": "Hava durumunu al", "parameters": {"type": "object", "properties": {"city": {"type": "string"}}, "required": ["city"]}}},
+    {"type": "function", "function": {"name": "get_exchange_rate", "description": "Döviz kurunu al", "parameters": {"type": "object", "properties": {"from_currency": {"type": "string"}, "to_currency": {"type": "string"}}, "required": ["from_currency", "to_currency"]}}},
+    {"type": "function", "function": {"name": "translate_text", "description": "Metni tercüme et", "parameters": {"type": "object", "properties": {"text": {"type": "string"}, "target_lang": {"type": "string"}}, "required": ["text", "target_lang"]}}},
 ]
 
 TOOL_SHORT_NAMES = {
-    'calculate_math': '数学', 'get_current_time': '时间', 'random_number': '随机',
-    'text_length': '字数', 'unit_converter': '单位', 'get_current_weather': '天气',
-    'get_exchange_rate': '汇率', 'translate_text': '翻译'
+    'calculate_math': 'Matematik', 'get_current_time': 'Zaman', 'random_number': 'Rastgele',
+    'text_length': 'Uzunluk', 'unit_converter': 'Birim', 'get_current_weather': 'Hava',
+    'get_exchange_rate': 'Döviz', 'translate_text': 'Çeviri'
 }
 
 def execute_tool(tool_name, args):
@@ -127,7 +146,7 @@ def execute_tool(tool_name, args):
         if tool_name == 'calculate_math':
             return {"result": eval(args.get('expression', '0'))}
         elif tool_name == 'get_current_time':
-            tz = args.get('timezone', 'Asia/Shanghai')
+            tz = args.get('timezone', 'Europe/Istanbul')
             return {"result": datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
         elif tool_name == 'random_number':
             return {"result": random.randint(args.get('min', 0), args.get('max', 100))}
@@ -136,11 +155,11 @@ def execute_tool(tool_name, args):
         elif tool_name == 'unit_converter':
             return {"result": f"{args.get('value', 0)} {args.get('from_unit', '')} = ? {args.get('to_unit', '')}"}
         elif tool_name == 'get_current_weather':
-            return {"result": f"{args.get('city', 'Unknown')}: 晴, 7~10°C"}
+            return {"result": f"{args.get('city', 'Unknown')}: Güneşli, 22°C"}
         elif tool_name == 'get_exchange_rate':
-            return {"result": f"1 {args.get('from_currency', 'USD')} = 7.2 {args.get('to_currency', 'CNY')}"}
+            return {"result": f"1 {args.get('from_currency', 'USD')} = 34.2 {args.get('to_currency', 'TRY')}"}
         elif tool_name == 'translate_text':
-            return {"result": f"[翻译结果]: hello world"}
+            return {"result": f"[Çeviri]: {args.get('text', '')}"}
         return {"result": "Unknown tool"}
     except Exception as e:
         return {"error": str(e)}
@@ -159,36 +178,39 @@ def process_assistant_content(content, is_streaming=False):
                 return match.group(0)
         content = re.sub(r'<tool_call>(.*?)</tool_call>', format_tool_call, content, flags=re.DOTALL)
     
+    thought_done_text = get_text('thought_done')
+    thinking_text = get_text('thinking_in_progress')
+
     # 流式生成且开启思考时，一开始就放到折叠里
     if is_streaming and st.session_state.get('enable_thinking', False) and '</think>' not in content and '<think>' not in content:
-        m = re.search(r'(\n\n(?:我是|您好|你好)[^\n]*)', content)
+        m = re.search(r'(\n\n(?:我是|您好|你好|Ben |Merhaba)[^\n]*)', content)
         if m and m.start(1) > 5:
             i = m.start(1)
             think_part = content[:i]
             answer_part = content[i:]
-            return f'<details open style="border-left: 2px solid #666; padding-left: 12px; margin: 8px 0;"><summary style="cursor: pointer; color: #888;">已思考</summary><div style="color: #aaa; font-size: 0.95em; margin-top: 8px; max-height: 100px; overflow-y: auto;">{think_part.strip()}</div></details>{answer_part}'
+            return f'<details open style="border-left: 2px solid #666; padding-left: 12px; margin: 8px 0;"><summary style="cursor: pointer; color: #888;">{thought_done_text}</summary><div style="color: #aaa; font-size: 0.95em; margin-top: 8px; max-height: 100px; overflow-y: auto;">{think_part.strip()}</div></details>{answer_part}'
         elif len(content) > 5:
-            return f'<details open style="border-left: 2px solid #666; padding-left: 12px; margin: 8px 0;"><summary style="cursor: pointer; color: #888;">思考中...</summary><div style="color: #aaa; font-size: 0.95em; margin-top: 8px; max-height: 100px; overflow-y: auto; display: flex; flex-direction: column-reverse;"><div style="margin-bottom: auto;">{content.strip().replace(chr(10), "<br>")}</div></div></details>'
+            return f'<details open style="border-left: 2px solid #666; padding-left: 12px; margin: 8px 0;"><summary style="cursor: pointer; color: #888;">{thinking_text}</summary><div style="color: #aaa; font-size: 0.95em; margin-top: 8px; max-height: 100px; overflow-y: auto; display: flex; flex-direction: column-reverse;"><div style="margin-bottom: auto;">{content.strip().replace(chr(10), "<br>")}</div></div></details>'
 
     if '<think>' in content and '</think>' in content:
         def format_think(match):
             think_content = match.group(2)
             if think_content.replace('\n', '').strip():  # 不是全换行
-                return f'<details open style="border-left: 2px solid #666; padding-left: 12px; margin: 8px 0;"><summary style="cursor: pointer; color: #888;">已思考</summary><div style="color: #aaa; font-size: 0.95em; margin-top: 8px; max-height: 100px; overflow-y: auto;">{think_content.strip()}</div></details>'
+                return f'<details open style="border-left: 2px solid #666; padding-left: 12px; margin: 8px 0;"><summary style="cursor: pointer; color: #888;">{thought_done_text}</summary><div style="color: #aaa; font-size: 0.95em; margin-top: 8px; max-height: 100px; overflow-y: auto;">{think_content.strip()}</div></details>'
             return ''
         content = re.sub(r'(<think>)(.*?)(</think>)', format_think, content, flags=re.DOTALL)
 
     if '<think>' in content and '</think>' not in content:
         def format_think_in_progress(match):
             tc = match.group(1)
-            return f'<details open style="border-left: 2px solid #666; padding-left: 12px; margin: 8px 0;"><summary style="cursor: pointer; color: #888;">思考中...</summary><div style="color: #aaa; font-size: 0.95em; margin-top: 8px; max-height: 100px; overflow-y: auto; display: flex; flex-direction: column-reverse;"><div style="margin-bottom: auto;">{tc.strip().replace(chr(10), "<br>")}</div></div></details>'
+            return f'<details open style="border-left: 2px solid #666; padding-left: 12px; margin: 8px 0;"><summary style="cursor: pointer; color: #888;">{thinking_text}</summary><div style="color: #aaa; font-size: 0.95em; margin-top: 8px; max-height: 100px; overflow-y: auto; display: flex; flex-direction: column-reverse;"><div style="margin-bottom: auto;">{tc.strip().replace(chr(10), "<br>")}</div></div></details>'
         content = re.sub(r'<think>(.*?)$', format_think_in_progress, content, flags=re.DOTALL)
 
     if '<think>' not in content and '</think>' in content:
         def format_think_no_start(match):
             think_content = match.group(1)
             if think_content.replace('\n', '').strip():
-                return f'<details open style="border-left: 2px solid #666; padding-left: 12px; margin: 8px 0;"><summary style="cursor: pointer; color: #888;">已思考</summary><div style="color: #aaa; font-size: 0.95em; margin-top: 8px; max-height: 100px; overflow-y: auto;">{think_content.strip()}</div></details>'
+                return f'<details open style="border-left: 2px solid #666; padding-left: 12px; margin: 8px 0;"><summary style="cursor: pointer; color: #888;">{thought_done_text}</summary><div style="color: #aaa; font-size: 0.95em; margin-top: 8px; max-height: 100px; overflow-y: auto;">{think_content.strip()}</div></details>'
             return ''
         content = re.sub(r'(.*?)</think>', format_think_no_start, content, flags=re.DOTALL)
 
@@ -247,18 +269,25 @@ for d in sorted(os.listdir(script_dir), reverse=True):
 if not MODEL_PATHS:
     MODEL_PATHS = {"No models found": ["", "No models"]}
 
-# 模型选择
+# Model seçimi / Model Selection
 selected_model = st.sidebar.selectbox('Model', list(MODEL_PATHS.keys()), index=0)
 model_path = MODEL_PATHS[selected_model][0]
-slogan = f"我是 {MODEL_PATHS[selected_model][1]}，有什么可以帮你的？" if st.session_state.get('lang', 'en') == 'zh' else f"I am {MODEL_PATHS[selected_model][1]}, how can I help you?"
+
+active_lang = st.session_state.get('lang', 'tr')
+if active_lang == 'tr':
+    slogan = f"Ben {MODEL_PATHS[selected_model][1]}, size nasıl yardımcı olabilirim?"
+elif active_lang == 'zh':
+    slogan = f"我是 {MODEL_PATHS[selected_model][1]}，有什么可以帮你的？"
+else:
+    slogan = f"I am {MODEL_PATHS[selected_model][1]}, how can I help you?"
 
 st.sidebar.markdown('<hr style="margin: 12px 0 16px 0;">', unsafe_allow_html=True)
 
-# 语言选择
-lang_options = {'中文': 'zh', 'English': 'en'}
-current_lang = st.session_state.get('lang', 'en')
-lang_index = 0 if current_lang == 'zh' else 1
-lang_label = st.sidebar.radio('Language / 语言', list(lang_options.keys()), index=lang_index, horizontal=True)
+# Dil seçimi / Language selection
+lang_options = {'Türkçe': 'tr', 'English': 'en', '中文': 'zh'}
+current_lang = st.session_state.get('lang', 'tr')
+lang_index = 0 if current_lang == 'tr' else (1 if current_lang == 'en' else 2)
+lang_label = st.sidebar.radio(get_text('language'), list(lang_options.keys()), index=lang_index, horizontal=True)
 if lang_options[lang_label] != current_lang:
     st.session_state.lang = lang_options[lang_label]
     st.rerun()
@@ -348,7 +377,17 @@ def main():
         setup_seed(random_seed)
 
         tools = [t for t in TOOLS if t['function']['name'] in st.session_state.get('selected_tools', [])] or None
-        sys_prompt = [] if tools else [{"role": "system", "content": "你是MiniMind，一个乐于助人、知识渊博的AI助手。请用完整且友好的方式回答用户问题。"}]
+        if tools:
+            sys_prompt = []
+        else:
+            cur_lang = st.session_state.get('lang', 'tr')
+            if cur_lang == 'tr':
+                sys_msg = "Sen MiniMind, yardımsever ve bilgili bir yapay zeka asistanısın. Kullanıcının sorularını eksiksiz, samimi ve doğal bir Türkçe ile yanıtla."
+            elif cur_lang == 'zh':
+                sys_msg = "你是MiniMind，一个乐于助人、知识渊博的AI助手。请用完整且友好的方式回答用户问题。"
+            else:
+                sys_msg = "You are MiniMind, a helpful and knowledgeable AI assistant. Please answer user questions in a complete and friendly manner."
+            sys_prompt = [{"role": "system", "content": sys_msg}]
         st.session_state.chat_messages = sys_prompt + st.session_state.chat_messages[-(st.session_state.history_chat_num + 1):]
         template_kwargs = {"tokenize": False, "add_generation_prompt": True}
         if st.session_state.get('enable_thinking', False):
