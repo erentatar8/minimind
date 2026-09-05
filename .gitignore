@@ -4,3 +4,17 @@ __pycache__/
 out
 website/
 docs-minimind/
+
+# Virtual Environment
+.venv/
+venv/
+env/
+
+# Mac / Local Scripts
+*.command
+
+# Downloaded Models & Checkpoints
+scripts/minimind-3/
+checkpoints/
+*.pth
+*.safetensors
