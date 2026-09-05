@@ -1,3 +1,4 @@
+import os
 import time
 import argparse
 import random
@@ -30,10 +31,11 @@ def init_model(args):
     return model.half().eval().to(args.device), tokenizer
 
 def main():
+    default_w = 'full_sft_tr' if os.path.exists('out/full_sft_tr_768.pth') else 'full_sft'
     parser = argparse.ArgumentParser(description="MiniMind Model Çıkarımı ve Sohbet")
     parser.add_argument('--load_from', default='model', type=str, help="Model yükleme yolu (model=yerel torch ağırlıkları, diğer yollar=transformers formatı)")
     parser.add_argument('--save_dir', default='out', type=str, help="Model ağırlık dizini")
-    parser.add_argument('--weight', default='full_sft', type=str, help="Ağırlık adı öneki (pretrain, full_sft, rlhf, reason, ppo_actor, grpo, spo)")
+    parser.add_argument('--weight', default=default_w, type=str, help="Ağırlık adı öneki (pretrain, full_sft, full_sft_tr, rlhf, reason)")
     parser.add_argument('--lora_weight', default='None', type=str, help="LoRA ağırlık adı (None=kullanma, örn: lora_identity, lora_medical)")
     parser.add_argument('--hidden_size', default=768, type=int, help="Gizli katman boyutu (hidden_size)")
     parser.add_argument('--num_hidden_layers', default=8, type=int, help="Gizli katman sayısı")

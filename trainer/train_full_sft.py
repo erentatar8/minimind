@@ -106,7 +106,7 @@ if __name__ == "__main__":
     parser.add_argument('--seed', default=42, type=int, help="Rastgelelik tohumu (random seed)")
     parser.add_argument("--data_path", type=str, default=default_data, help="SFT eğitim veri seti yolu")
     parser.add_argument('--from_weight', default='none', type=str, help="Hangi ağırlıktan başlanacağı (örn: pretrain, sıfırdan başlamak için none)")
-    parser.add_argument('--from_resume', default=0, type=int, choices=[0, 1], help="Kaldığı checkpoint'ten otomatik devam etsin mi? (0=Hayır, 1=Evet)")
+    parser.add_argument('--from_resume', default=1, type=int, choices=[0, 1], help="Kaldığı checkpoint'ten otomatik devam etsin mi? (0=Hayır, 1=Evet)")
     parser.add_argument("--use_wandb", action="store_true", help="Wandb / Swanlab takibi aktif edilsin mi?")
     parser.add_argument("--wandb_project", type=str, default="MiniMind-Full-SFT", help="Wandb proje adı")
     parser.add_argument("--use_compile", default=0, type=int, choices=[0, 1], help="torch.compile hızlandırması kullanılsın mı? (0=Hayır, 1=Evet)")
