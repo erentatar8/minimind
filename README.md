@@ -36,6 +36,11 @@ Türkçe | [English](./README_en.md) | [中文](./README_zh.md)
 > Bu depo; modern bir Büyük Dil Modelinin (LLM) sıfırdan nasıl inşa edildiğini, ön eğitim (pretraining), denetimli ince ayar (SFT) ve pekiştirmeli öğrenme (RL) süreçlerinin iç mekanizmalarını bizzat deneyimlemek amacıyla oluşturulmuştur.  
 > Projenin bir diğer temel odağı, Apple Silicon mimarisinin (özellikle M4 çipi ve Birleşik Bellek / Unified Memory) bu ölçekteki modellerin yerel eğitimi ve çıkarımındaki verimliliğini test etmektir.  
 > Türkçe konuşan araştırmacı ve geliştiricilere derli toplu bir açık kaynak kaynağı sunmak adına tüm dokümantasyon Türkçeleştirilmiş; orijinal İngilizce (`README_en.md`) ve Çince (`README_zh.md`) sürümler de depoda korunmuştur.
+>
+> **🍎 Apple Silicon M4 (24GB) Yerel Deney Sonuçları:**
+> - **Türkçe Ön Eğitim (Pretraining):** 75.000 filtrelenmiş Türkçe Vikipedi paragrafı (`dataset/pretrain_turkce.jsonl`, 79 MB) ile 1 epoch (4.688 adım) MPS üzerinde tamamlandı. Kayıp (Loss) 8.90'dan **1.6705'e** indi ($e^{1.67} \approx 5.3$ Perplexity).
+> - **Türkçe Denetimli İnce Ayar (SFT):** 56.782 örnek (`Turkish-Alpaca` + `Turkish-CoT`, 50 MB) ile 1 epoch (7.098 adım) MPS üzerinde tamamlandı. Kayıp 8.92'den **2.69'a** indi.
+> - **Yerel Çıkarım (Inference):** M4 GPU üzerinde saniyede **~58 tokens** üretim hızı ve kusursuz Türkçe morfolojik uyum doğrulandı.
 
 * Bu açık kaynaklı proje, yaklaşık 64M parametreli son derece küçük bir dil modeli olan MiniMind'ı, yalnızca yaklaşık 3 RMB maliyet ve 2 saatlik eğitim süresiyle tamamen sıfırdan eğitmeyi amaçlamaktadır.
 * MiniMind serisi bilinçli olarak hafif tasarlanmıştır. Ana daldaki en küçük model GPT-3'ün yaklaşık $\frac{1}{2700}$'i boyutundadır; bu sayede tam eğitim ve yeniden üretim sıradan kişisel GPU'larda bile kolayca gerçekleştirilebilir.
