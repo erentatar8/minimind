@@ -12,7 +12,8 @@ source .venv/bin/activate
 mkdir -p out checkpoints
 
 echo "=================================================="
-echo "🚀 MiniMind Türkçe SFT Eğitimi Başlatılıyor..."
+echo "🚀 MiniMind Türkçe Full SFT Eğitimi Başlatılıyor..."
+echo "📍 Başlangıç Ağırlığı: out/pretrain_tr_768.pth"
 echo "📍 Cihaz: Apple Silicon M4 (MPS)"
 echo "📊 Veri Seti: dataset/sft_turkce.jsonl (56.782 örnek)"
 echo "☕ caffeinate devrede: Ekran kapansa da Mac uyumayacak."
@@ -24,6 +25,8 @@ echo ""
 # PYTHONUNBUFFERED=1: Terminal loglarının anında akmasını sağlar
 caffeinate -i env PYTHONUNBUFFERED=1 python trainer/train_full_sft.py \
     --device mps \
+    --from_weight pretrain_tr \
+    --from_resume 0 \
     --batch_size 8 \
     --accumulation_steps 4 \
     --max_seq_len 384 \
@@ -33,7 +36,6 @@ caffeinate -i env PYTHONUNBUFFERED=1 python trainer/train_full_sft.py \
     --save_interval 500 \
     --save_weight full_sft_tr \
     --data_path dataset/sft_turkce.jsonl \
-    --from_resume 1 \
     2>&1 | tee -a out/train_sft.log
 
 STATUS=$?
@@ -41,7 +43,7 @@ STATUS=$?
 echo ""
 echo "=================================================="
 if [ $STATUS -eq 0 ]; then
-    echo "🎉 Eğitim Başarıyla Tamamlandı!"
+    echo "🎉 SFT Eğitimi Başarıyla Tamamlandı!"
     osascript -e 'display notification "MiniMind Türkçe SFT Eğitimi Tamamlandı!" with title "MiniMind 🚀"'
     afplay /System/Library/Sounds/Glass.aiff
 else
