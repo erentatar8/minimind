@@ -41,9 +41,10 @@ def main():
     parser.add_argument('--num_hidden_layers', default=8, type=int, help="Gizli katman sayısı")
     parser.add_argument('--use_moe', default=0, type=int, choices=[0, 1], help="MoE mimarisi kullanılsın mı (0=Hayır, 1=Evet)")
     parser.add_argument('--inference_rope_scaling', default=False, action='store_true', help="RoPE konumsal kodlama ekstrapolasyonunu etkinleştir")
-    parser.add_argument('--max_new_tokens', default=8192, type=int, help="Maksimum yeni belirteç sayısı")
-    parser.add_argument('--temperature', default=0.85, type=float, help="Örnekleme sıcaklığı (0-1 arası, yükseldikçe yaratıcılık artar)")
-    parser.add_argument('--top_p', default=0.95, type=float, help="Nucleus örnekleme eşiği (0-1)")
+    parser.add_argument('--max_new_tokens', default=512, type=int, help="Maksimum yeni belirteç sayısı")
+    parser.add_argument('--temperature', default=0.7, type=float, help="Örnekleme sıcaklığı (0-1 arası, yükseldikçe yaratıcılık artar)")
+    parser.add_argument('--top_p', default=0.90, type=float, help="Nucleus örnekleme eşiği (0-1)")
+    parser.add_argument('--repetition_penalty', default=1.2, type=float, help="Tekrar cezası katsayısı (1.0=cezasız, >1.0 tekrarları engeller)")
     parser.add_argument('--open_thinking', default=0, type=int, help="Uyarlanabilir düşünmeyi etkinleştir (0=Hayır, 1=Evet)")
     parser.add_argument('--historys', default=0, type=int, help="Diyalog geçmişi tur sayısı (çift sayı olmalı, 0=geçmişsiz)")
     parser.add_argument('--show_speed', default=1, type=int, help="Üretim hızını göster (tokens/s)")
@@ -85,7 +86,7 @@ def main():
             inputs=inputs["input_ids"], attention_mask=inputs["attention_mask"],
             max_new_tokens=args.max_new_tokens, do_sample=True, streamer=streamer,
             pad_token_id=tokenizer.pad_token_id, eos_token_id=tokenizer.eos_token_id,
-            top_p=args.top_p, temperature=args.temperature, repetition_penalty=1
+            top_p=args.top_p, temperature=args.temperature, repetition_penalty=args.repetition_penalty
         )
         response = tokenizer.decode(generated_ids[0][len(inputs["input_ids"][0]):], skip_special_tokens=True)
         conversation.append({"role": "assistant", "content": response})

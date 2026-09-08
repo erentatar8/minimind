@@ -24,11 +24,11 @@ caffeinate -i env PYTHONUNBUFFERED=1 python trainer/train_lora.py \
     --from_weight full_sft_tr \
     --lora_name lora_muzip \
     --data_path dataset/lora_muzip.jsonl \
-    --epochs 10 \
+    --epochs 3 \
     --batch_size 16 \
     --accumulation_steps 1 \
     --max_seq_len 384 \
-    --learning_rate 2e-4 \
+    --learning_rate 5e-5 \
     --log_interval 10 \
     --save_interval 50 \
     --from_resume 0 \

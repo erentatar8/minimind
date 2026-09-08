@@ -18,18 +18,17 @@ class LoRA(nn.Module):
         return self.B(self.A(x))
 
 
-def apply_lora(model, rank=16):
+def apply_lora(model, rank=16, scaling=0.25):
     for name, module in model.named_modules():
         if isinstance(module, nn.Linear) and module.in_features == module.out_features:
             lora = LoRA(module.in_features, module.out_features, rank=rank).to(model.device)
             setattr(module, "lora", lora)
             original_forward = module.forward
 
-            # 显式绑定
-            def forward_with_lora(x, layer1=original_forward, layer2=lora):
-                return layer1(x) + layer2(x)
+            def make_forward(layer1, layer2, scale):
+                return lambda x: layer1(x) + scale * layer2(x)
 
-            module.forward = forward_with_lora
+            module.forward = make_forward(original_forward, lora, scaling)
 
 
 def load_lora(model, path):
