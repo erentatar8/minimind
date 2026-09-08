@@ -4,7 +4,7 @@ import sys
 __package__ = "trainer"
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import datasets  # noqa: F401  # Windows pyarrow/torch DLL conflict workaround (issue #771)
+import datasets  # noqa: F401
 import argparse
 import time
 import warnings
@@ -61,9 +61,8 @@ def train_epoch(epoch, loader, iters, lora_params, start_step=0, wandb=None):
             model.eval()
             moe_suffix = '_moe' if lm_config.use_moe else ''
             lora_save_path = f'{args.save_dir}/{args.lora_name}_{lm_config.hidden_size}{moe_suffix}.pth'
-            # LoRA只保存LoRA权重
             save_lora(model, lora_save_path)
-            lm_checkpoint(lm_config, weight=args.lora_name, model=model, optimizer=optimizer, scaler=scaler, epoch=epoch, step=step, wandb=wandb, save_dir='../checkpoints')
+            lm_checkpoint(lm_config, weight=args.lora_name, model=model, optimizer=optimizer, scaler=scaler, epoch=epoch, step=step, wandb=wandb, save_dir=default_ckp)
             model.train()
 
         del input_ids, labels, res, loss
@@ -76,47 +75,57 @@ def train_epoch(epoch, loader, iters, lora_params, start_step=0, wandb=None):
         optimizer.zero_grad(set_to_none=True)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="MiniMind LoRA Fine-tuning")
-    parser.add_argument("--save_dir", type=str, default="../out", help="模型保存目录")
-    parser.add_argument("--lora_name", type=str, default="lora_medical", help="LoRA权重名称(如lora_identity/lora_medical等)")
-    parser.add_argument("--epochs", type=int, default=10, help="训练轮数")
-    parser.add_argument("--batch_size", type=int, default=32, help="batch size")
-    parser.add_argument("--learning_rate", type=float, default=1e-4, help="初始学习率")
-    parser.add_argument("--device", type=str, default="cuda:0" if torch.cuda.is_available() else "cpu", help="训练设备")
-    parser.add_argument("--dtype", type=str, default="bfloat16", help="混合精度类型")
-    parser.add_argument("--num_workers", type=int, default=8, help="数据加载线程数")
-    parser.add_argument("--accumulation_steps", type=int, default=1, help="梯度累积步数")
-    parser.add_argument("--grad_clip", type=float, default=1.0, help="梯度裁剪阈值")
-    parser.add_argument("--log_interval", type=int, default=10, help="日志打印间隔")
-    parser.add_argument("--save_interval", type=int, default=1000, help="模型保存间隔")
-    parser.add_argument('--hidden_size', default=768, type=int, help="隐藏层维度")
-    parser.add_argument('--num_hidden_layers', default=8, type=int, help="隐藏层数量")
-    parser.add_argument('--max_seq_len', default=340, type=int, help="训练的最大截断长度（中文1token≈1.5~1.7字符）")
-    parser.add_argument('--use_moe', default=0, type=int, choices=[0, 1], help="是否使用MoE架构（0=否，1=是）")
-    parser.add_argument("--data_path", type=str, default="../dataset/lora_medical.jsonl", help="LoRA训练数据路径")
-    parser.add_argument('--from_weight', default='full_sft', type=str, help="基于哪个权重训练，默认full_sft")
-    parser.add_argument('--from_resume', default=0, type=int, choices=[0, 1], help="是否自动检测&续训（0=否，1=是）")
-    parser.add_argument("--use_wandb", action="store_true", help="是否使用wandb")
-    parser.add_argument("--wandb_project", type=str, default="MiniMind-LoRA", help="wandb项目名")
-    parser.add_argument("--use_compile", default=0, type=int, choices=[0, 1], help="是否使用torch.compile加速（0=否，1=是）")
+    default_out = "../out" if os.path.exists("../out") else "out"
+    default_ckp = "../checkpoints" if os.path.exists("../checkpoints") else "checkpoints"
+    default_data = "../dataset/lora_muzip.jsonl" if os.path.exists("../dataset/lora_muzip.jsonl") else "dataset/lora_muzip.jsonl"
+
+    parser = argparse.ArgumentParser(description="MiniMind LoRA İnce Ayar (LoRA Fine-tuning)")
+    parser.add_argument("--save_dir", type=str, default=default_out, help="Model/LoRA kayıt dizini")
+    parser.add_argument("--lora_name", type=str, default="lora_muzip", help="LoRA adaptör dosya adı öneki")
+    parser.add_argument("--epochs", type=int, default=10, help="Eğitim tur (epoch) sayısı")
+    parser.add_argument("--batch_size", type=int, default=16, help="Batch boyutu")
+    parser.add_argument("--learning_rate", type=float, default=2e-4, help="LoRA öğrenme oranı")
+    parser.add_argument("--device", type=str, default="cuda:0" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu"), help="Eğitim cihazı (cuda / mps / cpu)")
+    parser.add_argument("--dtype", type=str, default="bfloat16", help="Karma hassasiyet tipi (bfloat16 / float16)")
+    parser.add_argument("--num_workers", type=int, default=0 if sys.platform == "darwin" else 8, help="Veri yükleme iş parçacığı sayısı")
+    parser.add_argument("--accumulation_steps", type=int, default=1, help="Gradyan biriktirme adımı")
+    parser.add_argument("--grad_clip", type=float, default=1.0, help="Gradyan kırpma (clipping) eşiği")
+    parser.add_argument("--log_interval", type=int, default=10, help="Log yazdırma sıklığı (adım)")
+    parser.add_argument("--save_interval", type=int, default=200, help="Model kaydetme sıklığı (adım)")
+    parser.add_argument('--hidden_size', default=768, type=int, help="Gizli katman boyutu")
+    parser.add_argument('--num_hidden_layers', default=8, type=int, help="Gizli katman sayısı")
+    parser.add_argument('--max_seq_len', default=384, type=int, help="Maksimum dizi uzunluğu (sequence length)")
+    parser.add_argument('--use_moe', default=0, type=int, choices=[0, 1], help="MoE mimarisi kullanılsın mı? (0=Hayır, 1=Evet)")
+    parser.add_argument("--data_path", type=str, default=default_data, help="LoRA eğitim veri seti yolu")
+    parser.add_argument('--from_weight', default='full_sft_tr', type=str, help="Hangi temel ağırlık üzerine takılacağı (örn: full_sft_tr)")
+    parser.add_argument('--from_resume', default=0, type=int, choices=[0, 1], help="Kaldığı checkpoint'ten devam etsin mi? (0=Hayır, 1=Evet)")
+    parser.add_argument("--use_wandb", action="store_true", help="Wandb / Swanlab takibi aktif edilsin mi?")
+    parser.add_argument("--wandb_project", type=str, default="MiniMind-LoRA", help="Wandb proje adı")
+    parser.add_argument("--use_compile", default=0, type=int, choices=[0, 1], help="torch.compile kullanılsın mı?")
     args = parser.parse_args()
 
-    # ========== 1. 初始化环境和随机种子 ==========
+    # ========== 1. Ortam ve Rastgelelik Tohumu ==========
     local_rank = init_distributed_mode()
     if dist.is_initialized(): args.device = f"cuda:{local_rank}"
     setup_seed(42 + (dist.get_rank() if dist.is_initialized() else 0))
     
-    # ========== 2. 配置目录、模型参数、检查ckp ==========
+    # ========== 2. Dizinler, Parametreler, Checkpoint ==========
     os.makedirs(args.save_dir, exist_ok=True)
+    os.makedirs(default_ckp, exist_ok=True)
     lm_config = MiniMindConfig(hidden_size=args.hidden_size, num_hidden_layers=args.num_hidden_layers, use_moe=bool(args.use_moe))
-    ckp_data = lm_checkpoint(lm_config, weight=args.lora_name, save_dir='../checkpoints') if args.from_resume==1 else None
+    ckp_data = lm_checkpoint(lm_config, weight=args.lora_name, save_dir=default_ckp) if args.from_resume==1 else None
     
-    # ========== 3. 设置混合精度 ==========
-    device_type = "cuda" if "cuda" in args.device else "cpu"
+    # ========== 3. Karma Hassasiyet (Mixed Precision) ==========
+    device_type = "cuda" if "cuda" in args.device else ("mps" if "mps" in args.device else "cpu")
     dtype = torch.bfloat16 if args.dtype == "bfloat16" else torch.float16
-    autocast_ctx = nullcontext() if device_type == "cpu" else torch.cuda.amp.autocast(dtype=dtype)
+    if device_type == "cuda":
+        autocast_ctx = torch.cuda.amp.autocast(dtype=dtype)
+    elif device_type == "mps":
+        autocast_ctx = torch.amp.autocast(device_type="mps", dtype=dtype)
+    else:
+        autocast_ctx = nullcontext()
     
-    # ========== 4. 配wandb ==========
+    # ========== 4. Wandb ==========
     wandb = None
     if args.use_wandb and is_main_process():
         import swanlab as wandb
@@ -125,18 +134,18 @@ if __name__ == "__main__":
         wandb_run_name = f"MiniMind-LoRA-{args.lora_name}-Epoch-{args.epochs}-BatchSize-{args.batch_size}-LR-{args.learning_rate}"
         wandb.init(project=args.wandb_project, name=wandb_run_name, id=wandb_id, resume=resume)
     
-    # ========== 5. 定义模型、应用LoRA、冻结非LoRA参数 ==========
-    model, tokenizer = init_model(lm_config, args.from_weight, device=args.device)
+    # ========== 5. Modeli Yükle, LoRA Uygula ve Ağırlıkları Dondur ==========
+    model, tokenizer = init_model(lm_config, args.from_weight, save_dir=args.save_dir, device=args.device)
     apply_lora(model)
     
-    # 统计参数
+    # Parametre istatistikleri
     total_params = sum(p.numel() for p in model.parameters())
     lora_params_count = sum(p.numel() for name, p in model.named_parameters() if 'lora' in name)
-    Logger(f"LLM 总参数量: {total_params / 1e6:.3f} M")
-    Logger(f"LoRA 参数量: {lora_params_count / 1e6:.3f} M")
-    Logger(f"LoRA 参数占比: {lora_params_count / total_params * 100:.2f}%")
+    Logger(f"LLM Toplam Parametre: {total_params / 1e6:.3f} M")
+    Logger(f"LoRA Eğitilebilir Parametre: {lora_params_count / 1e6:.3f} M")
+    Logger(f"LoRA Parametre Oranı: {lora_params_count / total_params * 100:.2f}%")
     
-    # 冻结非LoRA参数，收集LoRA参数
+    # Ana model ağırlıklarını dondur, sadece LoRA parametrelerini aktif et
     lora_params = []
     for name, param in model.named_parameters():
         if 'lora' in name:
@@ -145,13 +154,13 @@ if __name__ == "__main__":
         else:
             param.requires_grad = False
     
-    # ========== 6. 定义数据和优化器 ==========
+    # ========== 6. Veri Seti ve Optimizatör ==========
     train_ds = SFTDataset(args.data_path, tokenizer, max_length=args.max_seq_len)
     train_sampler = DistributedSampler(train_ds) if dist.is_initialized() else None
-    scaler = torch.cuda.amp.GradScaler(enabled=(args.dtype == 'float16'))
+    scaler = torch.amp.GradScaler(device_type, enabled=(args.dtype == 'float16'))
     optimizer = optim.AdamW(lora_params, lr=args.learning_rate)
     
-    # ========== 7. 从ckp恢复状态 ==========
+    # ========== 7. Checkpoint'ten Kurtarma ==========
     start_epoch, start_step = 0, 0
     if ckp_data:
         model.load_state_dict(ckp_data['model'], strict=False)
@@ -160,27 +169,29 @@ if __name__ == "__main__":
         start_epoch = ckp_data['epoch']
         start_step = ckp_data.get('step', 0)
     
-    # ========== 8. 编译和分布式包装 ==========
+    # ========== 8. Dağıtık Yapılandırma ==========
     if args.use_compile == 1:
         args.use_compile = 0
-        Logger('[LoRA] monkey-patch forward 与 torch.compile 不兼容，use_compile 已自动关闭')
+        Logger('[LoRA] torch.compile LoRA monkey-patch ile uyumsuz olduğundan otomatik kapatıldı.')
     if dist.is_initialized():
         model = DistributedDataParallel(model, device_ids=[local_rank])
     
-    # ========== 9. 开始训练 ==========
+    # ========== 9. Eğitim Döngüsü ==========
+    pin_mem = (device_type == "cuda")
     for epoch in range(start_epoch, args.epochs):
         train_sampler and train_sampler.set_epoch(epoch)
-        setup_seed(42 + epoch); indices = torch.randperm(len(train_ds)).tolist()
+        setup_seed(42 + epoch)
+        indices = torch.randperm(len(train_ds)).tolist()
         skip = start_step if (epoch == start_epoch and start_step > 0) else 0
         batch_sampler = SkipBatchSampler(train_sampler or indices, args.batch_size, skip)
-        loader = DataLoader(train_ds, batch_sampler=batch_sampler, num_workers=args.num_workers, pin_memory=True)
+        loader = DataLoader(train_ds, batch_sampler=batch_sampler, num_workers=args.num_workers, pin_memory=pin_mem)
         if skip > 0: 
-            Logger(f'Epoch [{epoch + 1}/{args.epochs}]: 跳过前{start_step}个step，从step {start_step + 1}开始')
+            Logger(f'Epoch [{epoch + 1}/{args.epochs}]: İlk {start_step} adım atlandı, {start_step + 1}. adımdan devam ediliyor.')
             train_epoch(epoch, loader, len(loader) + skip, lora_params, start_step, wandb)
         else:
             train_epoch(epoch, loader, len(loader), lora_params, 0, wandb)
     
-    # ========== 10. 清理分布进程 ==========
+    # ========== 10. Kapanış ==========
     if dist.is_initialized():
         dist.barrier()
         dist.destroy_process_group()
